@@ -1,9 +1,8 @@
-# Example Plugin
+# PingDescriptions
 
-This repository contains a sample mod for Risk of Rain 2.
+PingDescriptions is a Risk of Rain 2 mod that broadcasts item and equipment descriptions to chat when players ping pickups.
 
-You can clone this repository, open the visual studio solution file and compile it immediately.
-
-This repository is meant to represent best practices for starting a simple mod.
-
-Once your mod get compiled, you can utilize the Thunderstore folder for later uploading it to https://thunderstore.io/c/riskofrain2/
+## Build and package
+- Open the solution in Visual Studio or build it with `dotnet build`.
+- The build automatically copies the compiled DLL into the Thunderstore package folder under [Thunderstore/plugins/PingDescriptions](Thunderstore/plugins/PingDescriptions).
+- Review the manifest and README in [Thunderstore](Thunderstore) before uploading the package to Thunderstore.

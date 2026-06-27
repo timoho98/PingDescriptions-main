@@ -171,7 +171,7 @@ namespace PingDescriptions
             {
                 try
                 {
-                    int stacks = master?.inventory?.GetItemCount(itemDef.itemIndex) ?? 1;
+                    int stacks = master?.inventory?.GetItemCountEffective(itemDef.itemIndex) ?? 1;
                     if (stacks < 1) stacks = 1;
 
                     string result = (string)_lgGetItemDescription.Invoke(

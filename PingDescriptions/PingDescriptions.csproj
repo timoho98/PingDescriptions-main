@@ -21,10 +21,15 @@
 
 		<PackageReference Include="BepInEx.Core" Version="5.4.21" />
 
-<PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" />
+		<PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" />
 		<PackageReference Include="RiskOfRain2.GameLibs" Version="*-*" />
 		<PackageReference Include="MMHOOK.RoR2" Version="*" NoWarn="NU1701" />
         <PackageReference Include="RoR2BepInExPack" Version="*" />
 	</ItemGroup>
+
+	<Target Name="CopyToThunderstore" AfterTargets="Build">
+		<MakeDir Directories="$(MSBuildThisFileDirectory)..\Thunderstore\plugins\PingDescriptions" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildThisFileDirectory)..\Thunderstore\plugins\PingDescriptions" SkipUnchangedFiles="true" />
+	</Target>
 
 </Project>

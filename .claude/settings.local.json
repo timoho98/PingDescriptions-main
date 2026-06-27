@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(ls -la \"C:\\\\Users\\\\timoh\\\\Dropbox\\\\Programming\\\\RiskOfRain2Mods\\\\LookingGlass-main\")",
-      "Read(//c/Users/timoh/Dropbox/Programming/RiskOfRain2Mods/LookingGlass-main/**)"
-    ]
-  }
-}
