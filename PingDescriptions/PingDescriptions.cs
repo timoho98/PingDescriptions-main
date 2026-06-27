@@ -1,6 +1,5 @@
 using BepInEx;
 using MonoMod.RuntimeDetour;
-using R2API;
 using RoR2;
 using System;
 using System.Linq;
@@ -11,7 +10,6 @@ using UnityEngine.Networking;
 
 namespace PingDescriptions
 {
-    [BepInDependency(LanguageAPI.PluginGUID)]
     [BepInDependency("droppod.lookingglass", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class PingDescriptionsPlugin : BaseUnityPlugin
@@ -26,9 +24,6 @@ namespace PingDescriptions
         {
             Log.Init(Logger);
             Log.Info($"Loading {PluginName} v{PluginVersion}...");
-
-            // Register a passthrough token so SimpleChatMessage can format our raw strings
-            LanguageAPI.Add("PINGDESC_FORMAT", "{0}");
 
             // Soft-dep: if LookingGlass is loaded, grab its GetItemDescription for enhanced stats
             if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("droppod.lookingglass"))
@@ -79,18 +74,10 @@ namespace PingDescriptions
 
             // Only the host/server should broadcast — clients would double-send otherwise
             if (!NetworkServer.active)
-            {
-                Log.Debug("OnPing: not the server, skipping.");
                 return;
-            }
 
             if (newPingInfo.targetGameObject == null)
-            {
-                Log.Debug("OnPing: ping has no target object, skipping.");
                 return;
-            }
-
-            Log.Debug($"OnPing: ping detected on '{newPingInfo.targetGameObject.name}'");
 
             // Get the pinging player's master (PingerController lives on the CharacterMaster object)
             CharacterMaster pingerMaster = self.gameObject.GetComponent<CharacterMaster>();
@@ -98,43 +85,22 @@ namespace PingDescriptions
                 ?? pingerMaster?.GetBody()?.GetDisplayName()
                 ?? "Unknown";
 
-            Log.Debug($"OnPing: pinger is '{pingerName}'");
-
             PickupIndex pickupIndex = PickupIndex.none;
 
 #pragma warning disable Publicizer001
             if (newPingInfo.targetGameObject.TryGetComponent<GenericPickupController>(out var worldItem))
             {
                 pickupIndex = worldItem._pickupState.pickupIndex;
-                Log.Debug($"OnPing: world item detected, pickupIndex={pickupIndex}");
             }
             else if (newPingInfo.targetGameObject.TryGetComponent<ShopTerminalBehavior>(out var shop))
             {
                 if (!shop.hidden && shop.pickupDisplay != null)
-                {
                     pickupIndex = shop.pickup.pickupIndex;
-                    Log.Debug($"OnPing: shop terminal detected, pickupIndex={pickupIndex}");
-                }
-                else
-                {
-                    Log.Debug("OnPing: shop terminal is hidden or has no display, skipping.");
-                }
             }
             else if (newPingInfo.targetGameObject.TryGetComponent<PickupDistributorBehavior>(out var tempShop))
             {
                 if (!tempShop.hidden)
-                {
                     pickupIndex = tempShop.pickup.pickupIndex;
-                    Log.Debug($"OnPing: temp/printer shop detected, pickupIndex={pickupIndex}");
-                }
-                else
-                {
-                    Log.Debug("OnPing: temp shop is hidden, skipping.");
-                }
-            }
-            else
-            {
-                Log.Debug($"OnPing: no recognized pickup component on '{newPingInfo.targetGameObject.name}' — skipping (not an item/shop).");
             }
 #pragma warning restore Publicizer001
 
@@ -150,17 +116,11 @@ namespace PingDescriptions
 
             string chatMsg = BuildChatMessage(pickupDef, pingerMaster, pingerName);
             if (string.IsNullOrEmpty(chatMsg))
-            {
-                Log.Debug("OnPing: BuildChatMessage returned empty string, skipping.");
                 return;
-            }
-
-            Log.Debug($"OnPing: broadcasting chat message:\n{chatMsg}");
 
             Chat.SendBroadcastChat(new Chat.SimpleChatMessage
             {
-                baseToken = "PINGDESC_FORMAT",
-                paramTokens = [chatMsg]
+                baseToken = chatMsg
             });
 
             Log.Info($"Broadcast ping description: '{pingerName}' pinged {Language.GetString(PickupCatalog.GetPickupDef(pickupIndex)?.nameToken ?? "")}");
@@ -181,7 +141,6 @@ namespace PingDescriptions
                 }
                 itemName = Language.GetString(itemDef.nameToken);
                 description = GetItemDescriptionText(itemDef, pingerMaster);
-                Log.Debug($"BuildChatMessage: item='{itemName}'");
             }
             else if (pickupDef.equipmentIndex != EquipmentIndex.None)
             {
@@ -195,12 +154,10 @@ namespace PingDescriptions
                 description = Language.IsTokenInvalid(equipDef.descriptionToken)
                     ? Language.GetString(equipDef.pickupToken)
                     : Language.GetString(equipDef.descriptionToken);
-                Log.Debug($"BuildChatMessage: equipment='{itemName}'");
             }
             else
             {
                 // Lunar coins, drone indexes, etc. — not useful to broadcast
-                Log.Debug("BuildChatMessage: pickup is not a standard item or equipment, skipping.");
                 return null;
             }
 
@@ -222,10 +179,7 @@ namespace PingDescriptions
                         new object[] { itemDef, stacks, master, false, false });
 
                     if (!string.IsNullOrEmpty(result))
-                    {
-                        Log.Debug($"GetItemDescriptionText: LookingGlass returned description (stacks={stacks})");
                         return result;
-                    }
                 }
                 catch (Exception e)
                 {
@@ -233,13 +187,9 @@ namespace PingDescriptions
                 }
             }
 
-            // Vanilla fallback: use full description, or short pickup text if no full desc exists
-            string fallback = Language.IsTokenInvalid(itemDef.descriptionToken)
+            return Language.IsTokenInvalid(itemDef.descriptionToken)
                 ? Language.GetString(itemDef.pickupToken)
                 : Language.GetString(itemDef.descriptionToken);
-
-            Log.Debug("GetItemDescriptionText: using vanilla description.");
-            return fallback;
         }
 
         private static readonly Regex _tagRegex = new Regex(@"<[^>]+>", RegexOptions.Compiled);
@@ -259,8 +209,8 @@ namespace PingDescriptions
             if (lines.Length == 1) return lines[0];
 
             string desc = lines[0];
-            // string stats = string.Join(" | ", lines.Skip(1));
-            return $"{desc}";// [{stats}]";
+            string stats = string.Join(" | ", lines.Skip(1));
+            return $"{desc} [{stats}]";
         }
     }
 }
